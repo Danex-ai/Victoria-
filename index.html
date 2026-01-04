@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorry Victoria</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  height:100vh;
+  overflow:hidden;
+  font-family:Arial,sans-serif;
+  background:
+    linear-gradient(rgba(0,0,0,.65),rgba(0,0,0,.65)),
+    url("content://media/external/images/media/1000323751") center/cover no-repeat;
+}
+
+#canvas{position:relative;width:100%;height:100%}
+
+/* ROSE */
+.rose{
+  position:absolute;
+  width:40px;
+  height:40px;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+  filter:drop-shadow(0 0 8px rgba(255,23,68,.8));
+}
+
+.rose svg{width:100%;height:100%}
+
+/* FALLING ROSES */
+.falling-rose{
+  position:absolute;
+  top:-50px;
+  width:26px;
+  height:26px;
+  pointer-events:none;
+  animation:fall linear forwards;
+  z-index:4;
+}
+
+@keyframes fall{
+  to{transform:translateY(110vh) rotate(360deg);opacity:0}
+}
+
+/* TEXT ROSES */
+.love-text-container{
+  position:absolute;
+  bottom:22%;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  justify-content:center;
+  opacity:0;
+  transition:opacity 2s;
+}
+
+.love-text-container.show{opacity:1}
+
+.letter-rose{
+  width:40px;
+  height:40px;
+  animation:pulse 2s infinite;
+  position:relative;
+}
+
+@keyframes pulse{
+  50%{transform:scale(1.15)}
+}
+
+/* APOLOGY */
+.apology{
+  position:absolute;
+  bottom:5%;
+  left:50%;
+  transform:translateX(-50%);
+  max-width:90%;
+  padding:16px;
+  background:rgba(0,0,0,.6);
+  color:#fff;
+  border-radius:14px;
+  text-align:center;
+  font-size:14px;
+  line-height:1.7;
+  opacity:0;
+  z-index:10;
+}
+
+.apology.show{opacity:1}
+
+#typewriter::after{
+  content:"|";
+  animation:blink 1s infinite;
+}
+
+@keyframes blink{50%{opacity:0}}
+
+@media(max-width:480px){
+  .letter-rose{width:34px;height:34px}
+  .apology{font-size:13px}
+}
+</style>
+</head>
+
+<body>
+<div id="canvas">
+  <div class="love-text-container" id="loveText"></div>
+
+  <div class="apology" id="apologyBox">
+    <span id="typewriter"></span>
+  </div>
+</div>
+
+<audio id="bgMusic" loop>
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+const canvas=document.getElementById("canvas");
+const loveText=document.getElementById("loveText");
+const apologyBox=document.getElementById("apologyBox");
+const typeTarget=document.getElementById("typewriter");
+const music=document.getElementById("bgMusic");
+
+let centerX=innerWidth/2, centerY=innerHeight/2;
+onresize=()=>{centerX=innerWidth/2;centerY=innerHeight/2}
+
+function roseSVG(c1,c2){
+return`
+<svg viewBox="0 0 100 100">
+<ellipse cx="50" cy="40" rx="18" ry="25" fill="${c1}"/>
+<ellipse cx="35" cy="47" rx="18" ry="25" fill="${c1}" transform="rotate(-45 35 47)"/>
+<ellipse cx="65" cy="47" rx="18" ry="25" fill="${c1}" transform="rotate(45 65 47)"/>
+<circle cx="50" cy="55" r="8" fill="${c2}"/>
+</svg>`
+}
+
+function heartPoints(size){
+let p=[];
+for(let i=0;i<=260;i++){
+let t=i/260*Math.PI*2;
+let x=size*16*Math.sin(t)**3;
+let y=-size*(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));
+p.push({x:centerX+x,y:centerY+y});
+}
+return p;
+}
+
+function drawHeart(size,c1,c2,delay,speed){
+setTimeout(()=>{
+let pts=heartPoints(size),i=0;
+let r=document.createElement("div");
+r.className="rose";
+r.innerHTML=roseSVG(c1,c2);
+canvas.appendChild(r);
+
+(function step(){
+if(i>=pts.length)return r.remove();
+r.style.left=pts[i].x+"px";
+r.style.top=pts[i].y+"px";
+i++;setTimeout(step,speed);
+})();
+},delay);
+}
+
+[[3,"#ff5252","#ff1744",0,14],
+ [5,"#ff4081","#f50057",4000,12],
+ [7,"#ff80ab","#ff4081",8000,10]]
+.forEach(h=>drawHeart(...h));
+
+setTimeout(()=>{
+["I","AM","SORRY","VICTORIA","❤"].forEach(w=>{
+let d=document.createElement("div");
+d.className="letter-rose";
+d.innerHTML=roseSVG("#ff1744","#f50057");
+let t=document.createElement("div");
+t.textContent=w;
+Object.assign(t.style,{
+position:"absolute",top:"50%",left:"50%",
+transform:"translate(-50%,-50%)",
+color:"#fff",fontWeight:"bold"
+});
+d.appendChild(t);
+loveText.appendChild(d);
+});
+loveText.classList.add("show");
+},16000);
+
+/* TYPEWRITER + MUSIC + ROSES */
+const apologyText=
+"Victoria, I’m truly sorry. "+
+"I never meant to hurt you or make you feel disrespected. "+
+"I should have been more careful, especially knowing she’s your friend. "+
+"You matter to me, and I honestly hope we can talk when you’re ready. ❤️";
+
+let idx=0;
+
+function fadeInMusic(){
+music.volume=0;
+music.play().catch(()=>{});
+let v=0;
+let f=setInterval(()=>{
+if(v>=0.4)return clearInterval(f);
+v+=0.02;music.volume=v;
+},300);
+}
+
+function dropRose(){
+let r=document.createElement("div");
+r.className="falling-rose";
+r.style.left=Math.random()*innerWidth+"px";
+r.style.animationDuration=5+Math.random()*3+"s";
+r.innerHTML=roseSVG("#ff1744","#f50057");
+canvas.appendChild(r);
+setTimeout(()=>r.remove(),8000);
+}
+
+function startTypewriter(){
+apologyBox.classList.add("show");
+fadeInMusic();
+let rain=setInterval(dropRose,600);
+
+let type=setInterval(()=>{
+typeTarget.textContent+=apologyText[idx++];
+if(idx>=apologyText.length){
+clearInterval(type);
+clearInterval(rain);
+}
+},45);
+}
+
+setTimeout(startTypewriter,22000);
+</script>
+</body>
+</html>
